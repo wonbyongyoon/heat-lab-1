@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="author" content="강원대학교 식품공정공학연구실 윤원병">
+<title>열저항 실험실</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: lab bench. Control rail on the left, a live "thermal camera" view on the right, circuit + worked solution below it. */
+:root{
+  --bg:#edf0f3; --panel:#ffffff; --panel-2:#f4f6f8; --ink:#13202b; --muted:#5a6775; --line:#d5dce3; --grid:#e4e9ee;
+  --accent:#1c5ea4; --accent-ink:#ffffff; --accent-soft:#e3edf8; --heat:#d4561c; --good:#1d8549; --bad:#c0322a; --warn:#a8711a;
+  --font-body:'IBM Plex Sans KR','Apple SD Gothic Neo','Malgun Gothic',system-ui,sans-serif;
+  --font-mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0d1318; --panel:#141c23; --panel-2:#1a242d; --ink:#e3e9ef; --muted:#93a1ae; --line:#2a3641; --grid:#212d37;
+  --accent:#6ba8ec; --accent-ink:#0a1520; --accent-soft:#1b2c3e; --heat:#f08c4e; --good:#4cc283; --bad:#ef6b60; --warn:#e2aa4c; color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#0d1318; --panel:#141c23; --panel-2:#1a242d; --ink:#e3e9ef; --muted:#93a1ae; --line:#2a3641; --grid:#212d37;
+  --accent:#6ba8ec; --accent-ink:#0a1520; --accent-soft:#1b2c3e; --heat:#f08c4e; --good:#4cc283; --bad:#ef6b60; --warn:#e2aa4c; color-scheme:dark }
+html{font-size:14px}
+html.big{font-size:17px}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body);line-height:1.5;font-size:1rem}
+*{box-sizing:border-box}
+.wrap{max-width:1360px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+h1,h2,h3{margin:0;text-wrap:balance}
+.muted{color:var(--muted)} .small{font-size:.86rem}
+.mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+
+/* header */
+.top{background:var(--panel);border-bottom:1px solid var(--line)}
+.top-in{display:flex;align-items:center;gap:20px;flex-wrap:wrap;padding-block:12px}
+.brand{display:flex;align-items:center;gap:12px;margin-right:auto;min-width:0}
+.logo{width:38px;height:38px;border-radius:9px;flex:none;background:linear-gradient(90deg,#2a46c8,#32a3d8 30%,#efe05a 55%,#ee8a2a 78%,#c4231d)}
+.brand h1{font-size:1.35rem;font-weight:700;letter-spacing:-.01em}
+.brand p{margin:0;color:var(--muted);font-size:.86rem}
+.brand .author{color:var(--accent);font-size:.8rem;font-weight:500}
+.tabs{display:flex;gap:4px;background:var(--panel-2);padding:4px;border-radius:10px;border:1px solid var(--line)}
+.tabs button{border:0;background:transparent;padding:7px 14px;border-radius:7px;cursor:pointer;font-weight:600;color:var(--muted)}
+.tabs button[aria-selected="true"]{background:var(--panel);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.ghost{border:1px solid var(--line);background:transparent;padding:7px 12px;border-radius:8px;cursor:pointer}
+.ghost[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+
+main{padding-block:18px 40px}
+.sim-grid{display:grid;grid-template-columns:330px minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.sim-grid{grid-template-columns:minmax(0,1fr)}}
+.rail,.stage{display:flex;flex-direction:column;gap:14px;min-width:0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;min-width:0}
+.card h3{font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;margin-bottom:10px}
+.card-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.card-h h3{margin:0}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:var(--panel-2);border-radius:999px;padding:5px 11px;cursor:pointer;font-size:.9rem}
+.chip:hover{border-color:var(--accent)}
+.chip.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.seg{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:12px}
+.seg button{border:0;background:var(--panel-2);padding:9px 6px;cursor:pointer;font-weight:600;color:var(--muted)}
+.seg button.on{background:var(--accent);color:var(--accent-ink)}
+.fields{display:grid;gap:10px}
+.fields.two{grid-template-columns:1fr 1fr}
+.f{display:flex;flex-direction:column;gap:4px;font-size:.88rem;color:var(--muted);min-width:0}
+.in{display:flex;align-items:center;border:1px solid var(--line);border-radius:7px;background:var(--panel);overflow:hidden}
+.in:focus-within{border-color:var(--accent)}
+.in input{border:0;background:transparent;padding:7px 8px;width:100%;min-width:0;font-family:var(--font-mono);font-variant-numeric:tabular-nums;color:var(--ink);outline:none}
+.in em{font-style:normal;color:var(--muted);font-size:.8rem;padding-right:8px;white-space:nowrap}
+select{border:1px solid var(--line);border-radius:7px;background:var(--panel);padding:7px 8px;width:100%;color:var(--ink)}
+.bc+.bc{margin-top:14px;padding-top:14px;border-top:1px dashed var(--line)}
+.bc-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.tog{display:flex;gap:6px;align-items:center;font-size:.88rem;cursor:pointer}
+.tog input{accent-color:var(--accent);width:16px;height:16px}
+.small-btn,.small{border:1px solid var(--accent);color:var(--accent);background:transparent;border-radius:7px;padding:4px 10px;cursor:pointer;font-weight:600;font-size:.86rem}
+.small:disabled{opacity:.4;cursor:not-allowed}
+.layer{border:1px solid var(--line);border-radius:9px;padding:10px;background:var(--panel-2);display:grid;gap:8px}
+.layer+.layer{margin-top:8px}
+.layer-h{display:flex;gap:8px;align-items:center}
+.sw{width:24px;height:24px;border-radius:6px;flex:none;display:grid;place-items:center;font-weight:700;font-size:.8rem;color:#fff;text-shadow:0 0 3px rgba(0,0,0,.6)}
+.rm{border:0;background:transparent;color:var(--muted);font-size:1.2rem;cursor:pointer;padding:0 4px;line-height:1}
+.rm:hover{color:var(--bad)}
+.lrow{display:grid;grid-template-columns:1fr 110px;gap:8px;align-items:center}
+input[type=range]{width:100%;accent-color:var(--heat)}
+
+/* stage */
+.viz-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:8px}
+.viz-head h2{font-size:1.15rem}
+.viz-head p{margin:2px 0 0;font-size:.88rem}
+.cbar{display:flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:.8rem;color:var(--muted)}
+.cbar-g{width:140px;height:10px;border-radius:5px;background:linear-gradient(90deg,#2846c8,#32a3d8 25%,#f0e05a 50%,#ee8a2a 75%,#c4231d)}
+.cv-wrap{width:100%;overflow:hidden}
+canvas{display:block}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:8px;font-size:.86rem;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:12px;height:12px;border-radius:3px;display:inline-block}
+.readouts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+@media (max-width:700px){.readouts{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.ro{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;min-width:0}
+.ro .k{font-size:.78rem;color:var(--muted);letter-spacing:.04em}
+.ro .v{font-family:var(--font-mono);font-size:1.5rem;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.25;overflow-wrap:anywhere}
+.ro .v small{font-size:.8rem;color:var(--muted);font-weight:500;margin-left:3px}
+.ro .s{font-size:.82rem;color:var(--muted)}
+.ro.hot{border-color:var(--heat)} .ro.hot .v{color:var(--heat)}
+.circ-wrap{overflow-x:auto}
+.circ-wrap svg{display:block}
+.circ .w{stroke:var(--ink);stroke-width:2;fill:none}
+.circ .rz{stroke:var(--heat);stroke-width:2.4;fill:none;stroke-linejoin:round}
+.circ .rzc{stroke:var(--accent)}
+.circ .nd{fill:var(--panel);stroke:var(--ink);stroke-width:2}
+.circ .t{fill:var(--ink);font-family:var(--font-mono);font-size:12px}
+.circ .tm{fill:var(--muted);font-family:var(--font-mono);font-size:11px}
+.circ .tn{fill:var(--ink);font-family:var(--font-body);font-size:13px;font-weight:600}
+.circ .bg{fill:var(--grid)}
+.circ .bar{fill:var(--heat)} .circ .barc{fill:var(--accent)}
+.note{margin:10px 0 0;padding:9px 12px;border-radius:8px;background:var(--panel-2);border-left:3px solid var(--warn);font-size:.9rem}
+.note.ok{border-left-color:var(--good)}
+.eqs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.eq{background:var(--panel-2);border:1px solid var(--line);border-radius:7px;padding:5px 10px;font-family:var(--font-mono);font-size:.86rem}
+.steps{margin:0;padding-left:1.4em;display:grid;gap:6px;font-family:var(--font-mono);font-size:.9rem;font-variant-numeric:tabular-nums}
+.steps li{overflow-wrap:anywhere}
+.steps li::marker{color:var(--muted)}
+.steps b{color:var(--heat);font-weight:600}
+.steps .cm{font-family:var(--font-body);color:var(--muted)}
+.primary{background:var(--accent);color:var(--accent-ink);border:0;border-radius:8px;padding:9px 16px;font-weight:600;cursor:pointer}
+.primary:disabled{opacity:.45;cursor:not-allowed}
+.btn{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:9px 14px;cursor:pointer;font-weight:600}
+.btn:hover{border-color:var(--accent)}
+
+/* design */
+.dres{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-end;margin-bottom:10px}
+.dres .big{font-family:var(--font-mono);font-size:2.2rem;font-weight:600;color:var(--heat);line-height:1.1}
+.dres .big small{font-size:1rem;color:var(--muted)}
+.dres .msg{font-size:.92rem;color:var(--muted);max-width:60ch}
+.drow{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px}
+
+/* game */
+.gbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.gstat{display:flex;flex-direction:column;padding:2px 14px;border-left:1px solid var(--line)}
+.gstat:first-child{border-left:0;padding-left:0}
+.gstat .k{font-size:.75rem;color:var(--muted);letter-spacing:.05em}
+.gstat .v{font-family:var(--font-mono);font-size:1.4rem;font-weight:600}
+.gbar .sp{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.ggrid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:16px;margin-top:14px;align-items:start}
+@media (max-width:980px){.ggrid{grid-template-columns:minmax(0,1fr)}}
+.tag{display:inline-block;font-size:.75rem;letter-spacing:.06em;color:var(--accent);background:var(--accent-soft);padding:3px 9px;border-radius:999px;font-weight:600;margin-bottom:8px}
+.prob h2{font-size:1.2rem;margin-bottom:8px}
+.prob p{margin:0 0 8px;max-width:65ch}
+.givens{margin:8px 0 12px;padding:0;list-style:none;display:grid;gap:4px;font-family:var(--font-mono);font-size:.9rem}
+.givens li{padding:5px 10px;background:var(--panel-2);border-radius:6px}
+.ask{font-weight:600;font-size:1.05rem;margin:10px 0 8px;display:block}
+.ans .in{max-width:280px}
+.ans .in input{font-size:1.25rem;padding:9px 10px}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.fb{min-height:1.5em;margin:10px 0 0;font-weight:600}
+.fb.ok{color:var(--good)} .fb.no{color:var(--bad)} .fb.hint{color:var(--muted);font-weight:500}
+.reveal-h{margin-top:14px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap top-in">
+  <div class="brand"><div class="logo" aria-hidden="true"></div><div><h1>열저항 실험실</h1><p>정상상태 전도·대류 · 직렬 열저항 시뮬레이터</p><p class="author">작성자: 강원대학교 식품공정공학연구실 윤원병</p></div></div>
+  <nav class="tabs" role="tablist" aria-label="화면">
+    <button role="tab" data-view="sim" aria-selected="true">시뮬레이터</button>
+    <button role="tab" data-view="design" aria-selected="false">역설계</button>
+    <button role="tab" data-view="game" aria-selected="false">챌린지</button>
+  </nav>
+  <button id="bigBtn" class="ghost" aria-pressed="false">크게 보기</button>
+</div></header>
+
+<main class="wrap">
+<!-- ============ SIMULATOR ============ -->
+<section id="view-sim" class="view">
+  <div class="sim-grid">
+    <aside class="rail">
+      <div class="card"><h3>예제 불러오기</h3><div class="chips" id="presets"></div></div>
+      <div class="card"><h3>형상</h3>
+        <div class="seg" id="geoSeg"><button data-geo="slab">벽돌형 (평판)</button><button data-geo="cyl">원통형</button></div>
+        <div id="dimSlab" class="fields"><label class="f" for="inA">전열 면적 A<span class="in"><input id="inA" type="number" step="any" min="0.01"><em>m²</em></span></label></div>
+        <div id="dimCyl" class="fields two"><label class="f" for="inR0">안쪽 반경 r₀<span class="in"><input id="inR0" type="number" step="any" min="0.1"><em>mm</em></span></label><label class="f" for="inLc">길이 L<span class="in"><input id="inLc" type="number" step="any" min="0.01"><em>m</em></span></label></div>
+      </div>
+      <div class="card"><h3>경계 조건</h3>
+        <div class="bc"><div class="bc-h"><strong id="bc1Name">측 1 (왼쪽)</strong><label class="tog"><input type="checkbox" id="c1"> 대류 (유체)</label></div>
+          <div class="fields two"><label class="f" for="T1"><span id="t1Lab">유체 온도 T∞</span><span class="in"><input id="T1" type="number" step="any"><em>°C</em></span></label><label class="f" for="h1" id="h1Wrap">열전달계수 h<span class="in"><input id="h1" type="number" step="any" min="0.1"><em>W/m²K</em></span></label></div></div>
+        <div class="bc"><div class="bc-h"><strong id="bc2Name">측 2 (오른쪽)</strong><label class="tog"><input type="checkbox" id="c2"> 대류 (유체)</label></div>
+          <div class="fields two"><label class="f" for="T2"><span id="t2Lab">유체 온도 T∞</span><span class="in"><input id="T2" type="number" step="any"><em>°C</em></span></label><label class="f" for="h2" id="h2Wrap">열전달계수 h<span class="in"><input id="h2" type="number" step="any" min="0.1"><em>W/m²K</em></span></label></div></div>
+      </div>
+      <div class="card"><div class="card-h"><h3>층 구성</h3><button id="addLayer" class="small">+ 층 추가</button></div><div id="layers"></div></div>
+    </aside>
+
+    <div class="stage">
+      <div class="card">
+        <div class="viz-head"><div><h2 id="vizTitle"></h2><p class="muted" id="vizSub"></p></div>
+          <div class="cbar"><span id="cbMin"></span><div class="cbar-g" aria-hidden="true"></div><span id="cbMax"></span></div></div>
+        <div class="cv-wrap"><canvas id="cvMain" aria-label="온도 분포 애니메이션"></canvas></div>
+        <div class="legend" id="legend"></div>
+      </div>
+      <div class="readouts" id="readouts"></div>
+      <div class="card"><div class="card-h"><h3>열저항 회로</h3><span class="muted small">막대 길이 = 전체 저항 중 그 저항이 차지하는 비율</span></div>
+        <div class="circ-wrap" id="circuit"></div><p id="crit" class="note" hidden></p></div>
+      <div class="card"><div class="card-h"><h3>풀이 과정</h3></div>
+        <div class="eqs" id="eqs"></div><ol class="steps" id="steps"></ol></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ DESIGN ============ -->
+<section id="view-design" class="view" hidden>
+  <div class="sim-grid">
+    <aside class="rail"><div class="card"><h3>목표 설정</h3>
+      <p class="muted small" style="margin:0 0 10px">시뮬레이터에서 만든 구조를 그대로 사용합니다. 목표를 정하면 선택한 층의 두께를 거꾸로 구합니다.</p>
+      <div class="fields">
+        <label class="f" for="dType">목표 종류<select id="dType"><option value="q">열전달 속도 q (W)</option><option value="ts">측 2 표면 온도 (°C)</option></select></label>
+        <label class="f" for="dVal">목표값<span class="in"><input id="dVal" type="number" step="any"><em id="dUnit">W</em></span></label>
+        <label class="f" for="dLayer">두께를 구할 층<select id="dLayer"></select></label>
+      </div>
+      <p class="muted small" id="dNow" style="margin:10px 0 0"></p>
+    </div></aside>
+    <div class="stage">
+      <div class="card">
+        <div class="dres" id="dResult"></div>
+        <div class="cv-wrap"><canvas id="cvDesign" aria-label="두께에 따른 변화 그래프"></canvas></div>
+        <div class="drow"><button id="dApply" class="primary">이 두께를 시뮬레이터에 적용</button><span class="muted small">그래프: 선택한 층의 두께를 바꿀 때 목표 변수가 어떻게 변하는지</span></div>
+      </div>
+      <div class="card"><h3>풀이 과정</h3><ol class="steps" id="dSteps"></ol></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ GAME ============ -->
+<section id="view-game" class="view" hidden>
+  <div class="card gbar">
+    <div class="gstat"><span class="k">점수</span><span class="v" id="gScore">0</span></div>
+    <div class="gstat"><span class="k">연속 정답</span><span class="v" id="gStreak">0</span></div>
+    <div class="gstat"><span class="k">푼 문제</span><span class="v" id="gSolved">0</span></div>
+    <div class="gstat"><span class="k">최고 점수</span><span class="v" id="gBest">0</span></div>
+    <div class="sp"><select id="gLevel" aria-label="문제 유형" style="width:auto"><option value="all">전체 유형</option><option value="basic">기초: 전도만</option><option value="conv">전도 + 대류</option><option value="cyl">원통형</option><option value="design">두께 설계</option></select><button id="gNew" class="primary">새 문제</button></div>
+  </div>
+  <div class="ggrid">
+    <div class="card prob">
+      <span class="tag" id="pTag"></span>
+      <h2 id="pTitle"></h2>
+      <div id="pText"></div>
+      <div class="ans">
+        <label class="ask" for="ansIn" id="pQ"></label>
+        <div class="in"><input id="ansIn" type="number" step="any" placeholder="답 입력"><em id="pUnit"></em></div>
+        <div class="btns"><button id="gChk" class="primary">확인</button><button id="gHint" class="btn">힌트</button><button id="gReveal" class="btn">정답·풀이 보기</button></div>
+        <p class="fb" id="gFb" aria-live="polite"></p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="cv-wrap"><canvas id="cvGame" aria-label="문제 그림"></canvas></div>
+      <div class="legend" id="gLegend"></div>
+      <div id="gSol" hidden>
+        <h3 class="reveal-h">열저항 회로</h3><div class="circ-wrap" id="gCirc"></div>
+        <h3 class="reveal-h">풀이</h3><ol class="steps" id="gSteps"></ol>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+
+<script>
+/* ---------- helpers ---------- */
+const $=s=>document.querySelector(s);
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const SUBD='₀₁₂₃₄₅₆₇₈₉', SUPD='⁰¹²³⁴⁵⁶⁷⁸⁹';
+const usub=n=>String(n).split('').map(d=>SUBD[+d]??d).join('');
+const usup=n=>String(n).split('').map(d=>d==='-'?'⁻':(SUPD[+d]??d)).join('');
+const REDUCE=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+function fmt(x,p=4){
+  if(x==null||!isFinite(x)) return '—';
+  const a=Math.abs(x); if(a===0) return '0';
+  if(a<1e-3||a>=1e7){const [m,e]=x.toExponential(2).split('e');return m+'×10'+usup(+e);}
+  if(a>=10000) return Math.round(x).toLocaleString('ko-KR');
+  return String(Number(x.toPrecision(p)));
+}
+const fT=x=>(Math.abs(x)<0.05?0:x).toFixed(1);
+const tok=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+function niceTicks(lo,hi,n=5){const sp=hi-lo||1;const s0=sp/n;const mag=10**Math.floor(Math.log10(s0));const f=s0/mag;const st=(f<1.5?1:f<3?2:f<7?5:10)*mag;const out=[];for(let v=Math.ceil(lo/st)*st;v<=hi+st*1e-6;v+=st)out.push(+v.toFixed(8));return out;}
+function alloc(sizes,total,minPx){const n=sizes.length,fx=new Array(n).fill(false);let px=[];for(let it=0;it<5;it++){const nf=fx.filter(Boolean).length,rest=Math.max(0,total-nf*minPx),sum=sizes.reduce((s,v,i)=>fx[i]?s:s+v,0);px=sizes.map((v,i)=>fx[i]?minPx:(sum>0?v/sum*rest:rest/Math.max(1,n-nf)));let ch=false;px.forEach((p,i)=>{if(!fx[i]&&p<minPx){fx[i]=true;ch=true}});if(!ch)break;}return px;}
+const clone=o=>JSON.parse(JSON.stringify(o));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+
+/* thermal colormap (cold blue -> hot red) */
+const CMAP=[[0,[40,70,200]],[.25,[50,163,216]],[.5,[240,224,90]],[.75,[238,138,42]],[1,[196,35,29]]];
+function cmap(t,a=1){t=clamp(t,0,1);let i=0;while(i<CMAP.length-2&&t>CMAP[i+1][0])i++;const [t0,c0]=CMAP[i],[t1,c1]=CMAP[i+1];const u=(t-t0)/(t1-t0);const c=c0.map((v,k)=>Math.round(v+(c1[k]-v)*u));return `rgba(${c[0]},${c[1]},${c[2]},${a})`;}
+
+/* ---------- materials & presets ---------- */
+const MATS=[
+ ['ss','스테인리스강',16,'#8e9aa6'],['al','알루미늄',205,'#b8c2cb'],['cu','구리',385,'#c37a4b'],['cs','탄소강',45,'#5d6973'],
+ ['fb','내화벽돌',1.0,'#b04f39'],['brick','일반 벽돌',0.72,'#cc7350'],['conc','콘크리트',1.4,'#a29f97'],['glass','유리',0.8,'#8fc0ca'],
+ ['gf','유리섬유 단열재',0.04,'#e5c454'],['pu','폴리우레탄 폼',0.026,'#ddd38c'],['cork','코르크',0.043,'#9e7650'],['wood','목재(소나무)',0.12,'#c39862'],
+ ['ice','얼음',2.2,'#bfe0f0'],['water','물(정지)',0.6,'#5aa0d8'],['beef','냉동 쇠고기',1.35,'#983b3b'],['potato','감자',0.55,'#d6be76'],['custom','사용자 정의',1,'#7c8999']];
+const MAT={};MATS.forEach(([id,name,k,c])=>MAT[id]={id,name,k,c});
+const L=(id,t)=>({mat:id,k:MAT[id].k,t});
+const PRESETS={
+ simple:{label:'기본: 벽돌 2장 직렬',geo:'slab',A:1,r0:25,Lc:1,s1:{conv:false,T:100,h:10},s2:{conv:false,T:20,h:10},layers:[L('brick',100),L('fb',100)]},
+ oven:{label:'제빵 오븐 벽',geo:'slab',A:1,r0:25,Lc:1,s1:{conv:true,T:250,h:30},s2:{conv:true,T:25,h:10},layers:[L('fb',100),L('gf',50),L('ss',2)]},
+ freezer:{label:'냉동창고 벽',geo:'slab',A:10,r0:25,Lc:1,s1:{conv:true,T:30,h:20},s2:{conv:true,T:-25,h:8},layers:[L('conc',150),L('pu',100),L('ss',1)]},
+ steam:{label:'스팀 배관 단열',geo:'cyl',A:1,r0:25,Lc:10,s1:{conv:true,T:150,h:5000},s2:{conv:true,T:25,h:10},layers:[L('ss',3),L('gf',30)]},
+ refrig:{label:'냉매 배관',geo:'cyl',A:1,r0:8,Lc:5,s1:{conv:true,T:-20,h:800},s2:{conv:true,T:30,h:8},layers:[L('cu',1),L('pu',15)]}
+};
+let state=clone(PRESETS.simple); let curPreset='simple';
+
+/* ---------- physics ---------- */
+function solve(c){
+  const n=c.layers.length,A=Math.max(1e-6,c.A),Lc=Math.max(1e-6,c.Lc);
+  const r=[Math.max(1e-6,c.r0/1000)];c.layers.forEach((l,i)=>r.push(r[i]+Math.max(1e-6,l.t)/1000));
+  const els=[];
+  if(c.s1.conv){const area=c.geo==='slab'?A:2*Math.PI*r[0]*Lc;els.push({kind:'conv',side:1,h:c.s1.h,area,R:1/(Math.max(1e-6,c.s1.h)*area)});}
+  c.layers.forEach((l,i)=>{const k=Math.max(1e-9,l.k),t=Math.max(1e-6,l.t)/1000;const R=c.geo==='slab'?t/(k*A):Math.log(r[i+1]/r[i])/(2*Math.PI*k*Lc);els.push({kind:'cond',i,R});});
+  if(c.s2.conv){const area=c.geo==='slab'?A:2*Math.PI*r[n]*Lc;els.push({kind:'conv',side:2,h:c.s2.h,area,R:1/(Math.max(1e-6,c.s2.h)*area)});}
+  const Rtot=els.reduce((s,e)=>s+e.R,0);const q=(c.s1.T-c.s2.T)/Rtot;
+  const T=[c.s1.T];els.forEach(e=>T.push(T[T.length-1]-q*e.R));
+  const off=c.s1.conv?1:0;const Ts=T.slice(off,off+n+1);
+  return {r,els,Rtot,q,T,Ts};
+}
+const sideName=(c,s)=>c.geo==='slab'?(s===1?'왼쪽':'오른쪽'):(s===1?'내부':'외부');
+function elName(e){return e.kind==='conv'?`R<sub>conv,${e.side}</sub>`:`R<sub>${e.i+1}</sub>`;}
+function nodeName(c,s,j){const m=s.els.length;if(j===0&&c.s1.conv)return 'T<sub>∞,1</sub>';if(j===m&&c.s2.conv)return 'T<sub>∞,2</sub>';return `T<sub>${j-(c.s1.conv?1:0)+1}</sub>`;}
+function nodePlain(c,s,j){return nodeName(c,s,j).replace(/<sub>(.*?)<\/sub>/g,'$1');}
+
+function buildSteps(c,s){
+  const out=[],n=c.layers.length,A=c.A,Lc=c.Lc;
+  out.push(`<span class="cm">① 각 열저항 계산</span>`);
+  s.els.forEach(e=>{
+    const nm=elName(e);
+    if(e.kind==='conv'){
+      if(c.geo==='slab') out.push(`${nm} = 1/(h<sub>${e.side}</sub>A) = 1/(${fmt(e.h)} × ${fmt(A)}) = <b>${fmt(e.R)} K/W</b>`);
+      else{const rr=e.side===1?s.r[0]:s.r[n];const ri=e.side===1?0:n;out.push(`${nm} = 1/(h<sub>${e.side}</sub>·2πr<sub>${ri}</sub>L) = 1/(${fmt(e.h)} × 2π × ${fmt(rr)} × ${fmt(Lc)}) = <b>${fmt(e.R)} K/W</b>`);}
+    }else{
+      const l=c.layers[e.i];
+      if(c.geo==='slab') out.push(`${nm} = L<sub>${e.i+1}</sub>/(k<sub>${e.i+1}</sub>A) = ${fmt(l.t/1000)}/(${fmt(l.k)} × ${fmt(A)}) = <b>${fmt(e.R)} K/W</b>`);
+      else out.push(`${nm} = ln(r<sub>${e.i+1}</sub>/r<sub>${e.i}</sub>)/(2πk<sub>${e.i+1}</sub>L) = ln(${fmt(s.r[e.i+1])}/${fmt(s.r[e.i])})/(2π × ${fmt(l.k)} × ${fmt(Lc)}) = <b>${fmt(e.R)} K/W</b>`);
+    }
+  });
+  out.push(`<span class="cm">② 직렬 저항은 더한다</span>`);
+  out.push(`ΣR = ${s.els.map(e=>fmt(e.R)).join(' + ')} = <b>${fmt(s.Rtot)} K/W</b>`);
+  const m=s.els.length;
+  out.push(`<span class="cm">③ 전체 온도차 ÷ 전체 저항 = 열전달 속도 (모든 층에서 같은 값)</span>`);
+  out.push(`q = (${nodeName(c,s,0)} − ${nodeName(c,s,m)})/ΣR = (${fT(s.T[0])} − ${s.T[m]<0?'('+fT(s.T[m])+')':fT(s.T[m])})/${fmt(s.Rtot)} = <b>${fmt(s.q)} W</b>`);
+  if(m>1){
+    out.push(`<span class="cm">④ 각 저항을 지날 때 온도가 q·R 만큼 떨어진다</span>`);
+    for(let j=1;j<m;j++){const e=s.els[j-1];out.push(`${nodeName(c,s,j)} = ${nodeName(c,s,j-1)} − q·${elName(e)} = ${fT(s.T[j-1])} − ${fmt(s.q)} × ${fmt(e.R)} = <b>${fT(s.T[j])} °C</b>`);}
+  }
+  return out;
+}
+
+/* ---------- visualizer ---------- */
+class Viz{
+  constructor(cv){this.cv=cv;this.ctx=cv.getContext('2d');this.parts=[];this.time=0;this.cfg=null;
+    new ResizeObserver(()=>{if(this.cfg&&this.cv.parentElement.clientWidth!==this.W)this.layout();}).observe(cv.parentElement);}
+  set(cfg,sol,opts={}){this.cfg=cfg;this.sol=sol;this.hide=!!opts.hide;this.graph=opts.graph!==false;this.unknown=opts.unknown??-1;
+    let lo=Math.min(...sol.T),hi=Math.max(...sol.T);if(hi-lo<1){lo-=1;hi+=1;}this.tmin=lo;this.tmax=hi;
+    const area=sol.els.length&&cfg.geo==='cyl'?2*Math.PI*sol.r[sol.r.length-1]*cfg.Lc:cfg.A;const flux=Math.abs(sol.q)/Math.max(1e-6,area);
+    this.speed=clamp(16+36*Math.log10(1+flux/4),16,190);this.layout();}
+  layout(){const w=Math.max(260,this.cv.parentElement.clientWidth),cyl=this.cfg.geo==='cyl';
+    const topH=cyl?clamp(w*0.32,200,260):clamp(w*0.22,150,190),gH=this.graph?clamp(w*0.36,220,300):0,h=topH+gH,dpr=window.devicePixelRatio||1;
+    this.cv.style.width=w+'px';this.cv.style.height=h+'px';this.cv.width=Math.round(w*dpr);this.cv.height=Math.round(h*dpr);this.ctx.setTransform(dpr,0,0,dpr,0,0);
+    this.W=w;this.H=h;this.topH=topH;this.gL=w<480?46:60;this.gR=w-18;
+    if(cyl){this.rad=this.segs('radial',0,Math.min(topH/2-16,w/2-24));this.gsegs=this.segs('cyl',this.gL,this.gR);}else this.ssegs=this.segs('slab',this.gL,this.gR);
+    if(this.parts.length!==90)this.parts=Array.from({length:90},()=>({s:Math.random(),y:Math.random(),a:Math.random()*Math.PI*2,v:.75+Math.random()*.5}));
+    this.draw();}
+  segs(mode,a,b){const c=this.cfg,total=b-a,items=[];
+    if(mode==='slab'){if(c.s1.conv)items.push({kind:'f1'});}else items.push({kind:'core',size:c.r0});
+    c.layers.forEach((l,i)=>items.push({kind:'layer',i,size:l.t}));
+    if(c.s2.conv)items.push({kind:'f2'});
+    const fpx=mode==='slab'?Math.min(84,total*.14):mode==='cyl'?Math.min(72,total*.13):total*.17;
+    const minPx=mode==='slab'?24:mode==='cyl'?16:5;
+    const fc=items.filter(i=>i.size==null).length,sized=items.filter(i=>i.size!=null);
+    const px=alloc(sized.map(i=>i.size),total-fc*fpx,minPx);let k=0,p=a;
+    items.forEach(it=>{const wd=it.size==null?fpx:px[k++];it.p0=p;it.p1=p+wd;p+=wd;});return items;}
+  segT(sg,u){const c=this.cfg,s=this.sol,Ts=s.Ts,n=c.layers.length;
+    if(sg.kind==='layer'){const i=sg.i;if(c.geo==='slab')return Ts[i]+(Ts[i+1]-Ts[i])*u;const r0=s.r[i],r1=s.r[i+1],r=r0+u*(r1-r0);return Ts[i]-(Ts[i]-Ts[i+1])*Math.log(r/r0)/Math.log(r1/r0);}
+    if(sg.kind==='f1'||sg.kind==='core'){if(!c.s1.conv)return null;const v=clamp((u-.45)/.55,0,1);return c.s1.T+(Ts[0]-c.s1.T)*v*v;}
+    const v=clamp(u/.55,0,1);return Ts[n]+(c.s2.T-Ts[n])*(1-(1-v)*(1-v));}
+  segAt(list,p){for(const sg of list)if(p>=sg.p0&&p<=sg.p1)return sg;return list[list.length-1];}
+  colT(T,a=1){return cmap((T-this.tmin)/(this.tmax-this.tmin),a);}
+  step(dt){this.time+=dt;if(REDUCE||this.hide)return;this.parts.forEach(p=>{p.s+=this.speed*p.v*dt/Math.max(40,this.pathLen||200);if(p.s>1){p.s-=1;p.y=Math.random();p.a=Math.random()*Math.PI*2;}});}
+  draw(){if(!this.cfg)return;const x=this.ctx;x.clearRect(0,0,this.W,this.H);
+    this.col={ink:tok('--ink'),muted:tok('--muted'),line:tok('--line'),grid:tok('--grid'),panel:tok('--panel'),panel2:tok('--panel-2'),heat:tok('--heat'),accent:tok('--accent')};
+    x.font=`12px ${tok('--font-body')}`;
+    if(this.cfg.geo==='slab')this.drawSlab();else this.drawCyl();if(this.graph)this.drawGraph();}
+  thickLabel(i){return i===this.unknown?'? mm':fmt(this.cfg.layers[i].t)+' mm';}
+  badge(x,y,i,col){const c=this.ctx;c.beginPath();c.arc(x,y,9,0,Math.PI*2);c.fillStyle=col.ink;c.fill();c.fillStyle=col.panel;c.textAlign='center';c.textBaseline='middle';c.font=`600 11px ${tok('--font-mono')}`;c.fillText(i+1,x,y+.5);}
+  drawSlab(){const x=this.ctx,c=this.cfg,s=this.sol,col=this.col,y0=34,y1=this.topH-30,hh=y1-y0,mono=tok('--font-mono');
+    this.ssegs.forEach(sg=>{const w=sg.p1-sg.p0;
+      if(sg.kind==='layer'){
+        if(this.hide)x.fillStyle=MAT[c.layers[sg.i].mat]?.c||'#888';else{const g=x.createLinearGradient(sg.p0,0,sg.p1,0);for(let j=0;j<=6;j++)g.addColorStop(j/6,this.colT(this.segT(sg,j/6)));x.fillStyle=g;}
+        x.fillRect(sg.p0,y0,w,hh);
+        x.strokeStyle=col.panel;x.lineWidth=2;x.strokeRect(sg.p0+1,y0,w-2,hh);
+        this.badge(sg.p0+w/2,y0-15,sg.i,col);
+        if(w>36){x.fillStyle=col.muted;x.font=`11px ${mono}`;x.textAlign='center';x.textBaseline='top';x.fillText(this.thickLabel(sg.i),sg.p0+w/2,y1+8);}
+      }else{
+        const side=sg.kind==='f1'?c.s1:c.s2;
+        if(this.hide)x.fillStyle=col.accent;else{const g=x.createLinearGradient(sg.p0,0,sg.p1,0);for(let j=0;j<=6;j++)g.addColorStop(j/6,this.colT(this.segT(sg,j/6)));x.fillStyle=g;}
+        x.globalAlpha=this.hide?.12:.32;x.fillRect(sg.p0,y0,w,hh);x.globalAlpha=1;
+        x.save();x.setLineDash([7,9]);x.lineDashOffset=-this.time*36*(sg.kind==='f1'?1:-1);x.strokeStyle=col.muted;x.lineWidth=1.4;
+        for(let k=0;k<3;k++){const px=sg.p0+w*(.22+.26*k);x.beginPath();x.moveTo(px,y0+4);x.lineTo(px,y1-4);x.stroke();}x.restore();
+        x.fillStyle=col.ink;x.font=`600 11px ${mono}`;x.textAlign='center';x.textBaseline='middle';x.fillText(`T∞ ${fT(side.T)}°C`,sg.p0+w/2,y0-15);
+        x.fillStyle=col.muted;x.font=`11px ${mono}`;x.textBaseline='top';x.fillText(`h ${fmt(side.h)}`,sg.p0+w/2,y1+8);
+      }});
+    const lay=this.ssegs.filter(q=>q.kind==='layer'),a=lay[0].p0,b=lay[lay.length-1].p1;this.pathLen=b-a;
+    if(!this.hide&&Math.abs(s.q)>1e-9){const dir=s.q>0?1:-1;
+      this.parts.forEach(p=>{const px=dir>0?a+p.s*(b-a):b-p.s*(b-a),py=y0+7+p.y*(hh-14);
+        x.strokeStyle='rgba(255,255,255,.45)';x.lineWidth=1.5;x.beginPath();x.moveTo(px-dir*9,py);x.lineTo(px,py);x.stroke();
+        x.fillStyle='rgba(255,255,255,.92)';x.beginPath();x.arc(px,py,2.4,0,Math.PI*2);x.fill();});
+      // heat direction arrow
+      x.fillStyle=col.heat;x.font=`600 12px ${tok('--font-body')}`;x.textAlign=dir>0?'right':'left';x.textBaseline='middle';
+      const ax=dir>0?this.gR:this.gL;x.fillText(dir>0?'열 흐름 →':'← 열 흐름',ax,12);}
+  }
+  ring(cx,cy,r0,r1,fill){const x=this.ctx;x.beginPath();x.arc(cx,cy,r1,0,Math.PI*2);if(r0>0)x.arc(cx,cy,r0,0,Math.PI*2,true);x.fillStyle=fill;x.fill('evenodd');}
+  drawCyl(){const x=this.ctx,c=this.cfg,s=this.sol,col=this.col,cx=this.W/2,cy=this.topH/2+4,mono=tok('--font-mono');
+    const segs=this.rad;
+    for(let k=segs.length-1;k>=0;k--){const sg=segs[k];
+      let fill;
+      if(sg.kind==='layer'&&this.hide)fill=MAT[c.layers[sg.i].mat]?.c||'#888';
+      else if(sg.kind==='core'&&!c.s1.conv)fill=col.panel2;
+      else if(this.hide)fill=col.accent;
+      else{const g=x.createRadialGradient(cx,cy,Math.max(0,sg.p0),cx,cy,sg.p1);for(let j=0;j<=8;j++)g.addColorStop(j/8,this.colT(this.segT(sg,j/8)));fill=g;}
+      x.globalAlpha=sg.kind==='layer'?1:(sg.kind==='core'&&!c.s1.conv?1:(this.hide?.14:.38));
+      this.ring(cx,cy,sg.p0,sg.p1,fill);x.globalAlpha=1;
+      if(sg.kind!=='f2'){x.beginPath();x.arc(cx,cy,sg.p1,0,Math.PI*2);x.strokeStyle=col.panel;x.lineWidth=1.5;x.stroke();}
+    }
+    // swirl in core / outer fluid
+    const core=segs[0];
+    if(c.s1.conv){x.fillStyle=col.ink;x.globalAlpha=.35;for(let k=0;k<6;k++){const an=this.time*1.4+k*Math.PI/3;x.beginPath();x.arc(cx+Math.cos(an)*core.p1*.55,cy+Math.sin(an)*core.p1*.55,1.8,0,Math.PI*2);x.fill();}x.globalAlpha=1;}
+    else{x.fillStyle=col.muted;x.font=`11px ${tok('--font-body')}`;x.textAlign='center';x.textBaseline='middle';if(core.p1>22)x.fillText('표면',cx,cy);}
+    const f2=segs.find(q=>q.kind==='f2');
+    if(f2){x.save();x.setLineDash([5,7]);x.lineDashOffset=-this.time*20;x.strokeStyle=col.muted;x.lineWidth=1.2;x.beginPath();x.arc(cx,cy,(f2.p0+f2.p1)/2,0,Math.PI*2);x.stroke();x.restore();}
+    // particles
+    const lay=segs.filter(q=>q.kind==='layer'),a=lay[0].p0,b=lay[lay.length-1].p1;this.pathLen=b-a;
+    if(!this.hide&&Math.abs(s.q)>1e-9){const dir=s.q>0?1:-1;
+      this.parts.forEach(p=>{const rr=dir>0?a+p.s*(b-a):b-p.s*(b-a),px=cx+Math.cos(p.a)*rr,py=cy+Math.sin(p.a)*rr;
+        x.fillStyle='rgba(255,255,255,.92)';x.beginPath();x.arc(px,py,2.2,0,Math.PI*2);x.fill();});}
+    // badges
+    lay.forEach((sg,k)=>{const an=-Math.PI*.7+k*.42,rm=(sg.p0+sg.p1)/2;this.badge(cx+Math.cos(an)*rm,cy+Math.sin(an)*rm,sg.i,col);});
+    // radius ruler
+    const re=(f2?f2.p0:b);x.strokeStyle=col.ink;x.lineWidth=1;x.setLineDash([3,3]);x.beginPath();x.moveTo(cx,cy);x.lineTo(cx+re+8,cy);x.stroke();x.setLineDash([]);
+    x.font=`10px ${mono}`;x.textAlign='left';
+    // corner labels
+    x.font=`600 11px ${mono}`;x.fillStyle=col.ink;x.textBaseline='top';x.textAlign='left';
+    x.fillText(`내부 ${c.s1.conv?'유체':'표면'}`,4,4);x.font=`11px ${mono}`;x.fillStyle=col.muted;x.fillText(c.s1.conv?`T∞ ${fT(c.s1.T)}°C · h ${fmt(c.s1.h)}`:`T ${fT(c.s1.T)}°C`,4,20);
+    x.fillText(`r₀ = ${fmt(c.r0)} mm · L = ${fmt(c.Lc)} m`,4,36);
+    x.textAlign='right';x.font=`600 11px ${mono}`;x.fillStyle=col.ink;x.fillText(`외부 ${c.s2.conv?'유체':'표면'}`,this.W-4,4);x.font=`11px ${mono}`;x.fillStyle=col.muted;x.fillText(c.s2.conv?`T∞ ${fT(c.s2.T)}°C · h ${fmt(c.s2.h)}`:`T ${fT(c.s2.T)}°C`,this.W-4,20);
+    if(!this.hide&&Math.abs(s.q)>1e-9){x.fillStyle=col.heat;x.font=`600 12px ${tok('--font-body')}`;x.textAlign='right';x.textBaseline='bottom';x.fillText(s.q>0?'열 흐름: 안 → 밖':'열 흐름: 밖 → 안',this.W-4,this.topH-6);}
+  }
+  drawGraph(){const x=this.ctx,c=this.cfg,s=this.sol,col=this.col,mono=tok('--font-mono'),top=this.topH+20,bot=this.H-40,Lx=this.gL,Rx=this.gR;
+    const segs=c.geo==='slab'?this.ssegs:this.gsegs;
+    let lo=this.tmin,hi=this.tmax,pad=(hi-lo)*.14;lo-=pad;hi+=pad;const ticks=niceTicks(lo,hi,5);lo=Math.min(lo,ticks[0]);hi=Math.max(hi,ticks[ticks.length-1]);
+    const Y=T=>bot-(T-lo)/(hi-lo)*(bot-top);
+    // bands
+    segs.forEach(sg=>{if(sg.kind==='layer'&&sg.i%2===0){x.fillStyle=col.panel2;x.fillRect(sg.p0,top,sg.p1-sg.p0,bot-top);}else if(sg.kind!=='layer'){x.globalAlpha=.07;x.fillStyle=col.accent;x.fillRect(sg.p0,top,sg.p1-sg.p0,bot-top);x.globalAlpha=1;}});
+    // grid
+    x.font=`11px ${mono}`;x.textBaseline='middle';x.textAlign='right';
+    ticks.forEach(t=>{const y=Y(t);x.strokeStyle=col.grid;x.lineWidth=1;x.beginPath();x.moveTo(Lx,y);x.lineTo(Rx,y);x.stroke();x.fillStyle=col.muted;x.fillText(String(Number(t.toPrecision(6))),Lx-6,y);});
+    x.save();x.translate(14,(top+bot)/2);x.rotate(-Math.PI/2);x.textAlign='center';x.fillStyle=col.muted;x.font=`11px ${tok('--font-body')}`;x.fillText('온도 T (°C)',0,0);x.restore();
+    // boundaries + x labels
+    x.strokeStyle=col.line;x.lineWidth=1;let lastLbl=-99;x.textAlign='center';x.textBaseline='top';x.font=`11px ${mono}`;
+    const bounds=[];let cum=0;
+    segs.forEach(sg=>{if(sg.kind==='layer'){if(!bounds.length||bounds[bounds.length-1].p!==sg.p0)bounds.push({p:sg.p0,v:c.geo==='slab'?cum:s.r[sg.i]*1000});cum+=c.layers[sg.i].t;bounds.push({p:sg.p1,v:c.geo==='slab'?cum:s.r[sg.i+1]*1000});}});
+    if(c.geo==='cyl')bounds.unshift({p:segs[0].p0,v:0});
+    bounds.forEach(bd=>{x.beginPath();x.moveTo(bd.p,top);x.lineTo(bd.p,bot);x.stroke();if(bd.p-lastLbl>30){x.fillStyle=col.muted;x.fillText(fmt(bd.v,4),bd.p,bot+6);lastLbl=bd.p;}});
+    x.textAlign='right';x.fillText(c.geo==='slab'?'x (mm)':'r (mm)',Rx,bot+22);
+    x.strokeStyle=col.ink;x.beginPath();x.moveTo(Lx,top);x.lineTo(Lx,bot);x.lineTo(Rx,bot);x.stroke();
+    if(this.hide)return;
+    // curves
+    segs.forEach(sg=>{const N=sg.kind==='layer'?40:28,pts=[];for(let j=0;j<=N;j++){const u=j/N,T=this.segT(sg,u);if(T==null)continue;pts.push([sg.p0+u*(sg.p1-sg.p0),Y(T),T]);}
+      if(pts.length<2)return;
+      if(sg.kind==='layer'){x.lineWidth=3.4;x.lineCap='round';for(let j=1;j<pts.length;j++){x.strokeStyle=this.colT((pts[j][2]+pts[j-1][2])/2);x.beginPath();x.moveTo(pts[j-1][0],pts[j-1][1]);x.lineTo(pts[j][0],pts[j][1]);x.stroke();}}
+      else{x.save();x.setLineDash([5,4]);x.strokeStyle=col.muted;x.lineWidth=2;x.beginPath();pts.forEach((p,j)=>j?x.lineTo(p[0],p[1]):x.moveTo(p[0],p[1]));x.stroke();x.restore();}});
+    // nodes
+    const lay=segs.filter(q=>q.kind==='layer'),nodes=[];
+    lay.forEach((sg,k)=>{if(k===0)nodes.push([sg.p0,s.Ts[0]]);nodes.push([sg.p1,s.Ts[sg.i+1]]);});
+    const f1=segs.find(q=>q.kind==='f1'||(q.kind==='core'&&c.s1.conv)),f2=segs.find(q=>q.kind==='f2');
+    x.font=`600 11px ${mono}`;x.textBaseline='middle';
+    const label=(px,T,up,align='center')=>{const t=fT(T)+'°';const w=x.measureText(t).width+8;let lx=align==='center'?px-w/2:align==='left'?px+4:px-w-4;lx=clamp(lx,Lx+2,Rx-w-2);let ly=Y(T)+(up?-16:16);ly=clamp(ly,top+8,bot-8);x.fillStyle=col.panel;x.globalAlpha=.88;x.fillRect(lx,ly-8,w,16);x.globalAlpha=1;x.fillStyle=col.ink;x.textAlign='left';x.fillText(t,lx+4,ly+.5);};
+    nodes.forEach(([px,T],k)=>{x.fillStyle=col.panel;x.strokeStyle=col.ink;x.lineWidth=2;x.beginPath();x.arc(px,Y(T),4.5,0,Math.PI*2);x.fill();x.stroke();label(px,T,k%2===0);});
+    if(f1&&c.s1.conv)label(f1.p0+2,c.s1.T,true,'left');
+    if(f2)label(f2.p1-2,c.s2.T,false,'right');
+  }
+}
+
+/* ---------- circuit svg ---------- */
+function circuitSVG(c,s,opts={}){
+  const m=s.els.length,step=158,x0=46,w=x0*2+m*step,yW=60;let g='';
+  const share=s.els.map(e=>e.R/s.Rtot);
+  for(let j=0;j<m;j++){const e=s.els[j],a=x0+j*step,b=a+step,mid=(a+b)/2,zw=64;
+    let zz=`M${mid-zw/2},${yW}`;const seg=8;for(let k=1;k<=seg;k++){const xx=mid-zw/2+k*zw/seg,yy=k===seg?yW:yW+(k%2?-9:9);zz+=` L${xx},${yy}`;}
+    g+=`<line class="w" x1="${a}" y1="${yW}" x2="${mid-zw/2}" y2="${yW}"/><line class="w" x1="${mid+zw/2}" y1="${yW}" x2="${b}" y2="${yW}"/>`;
+    g+=`<path class="rz ${e.kind==='conv'?'rzc':''}" d="${zz}"/>`;
+    const nm=e.kind==='conv'?`<tspan>R</tspan><tspan font-size="10" dy="4">conv,${e.side}</tspan>`:`<tspan>R</tspan><tspan font-size="10" dy="4">${e.i+1}</tspan>`;
+    const what=e.kind==='conv'?'대류':(MAT[c.layers[e.i].mat]?.name||'층');
+    g+=`<text class="tn" x="${mid}" y="30" text-anchor="middle">${nm}</text>`;
+    g+=`<text class="tm" x="${mid}" y="44" text-anchor="middle">${what}</text>`;
+    if(!opts.hideVals){g+=`<text class="t" x="${mid}" y="88" text-anchor="middle">${fmt(e.R)} K/W</text>`;
+      const bw=step-44;g+=`<rect class="bg" x="${mid-bw/2}" y="98" width="${bw}" height="7" rx="3.5"/><rect class="${e.kind==='conv'?'barc':'bar'}" x="${mid-bw/2}" y="98" width="${Math.max(2,bw*share[j])}" height="7" rx="3.5"/>`;
+      g+=`<text class="tm" x="${mid}" y="122" text-anchor="middle">${(share[j]*100).toFixed(1)}%</text>`;}
+  }
+  for(let j=0;j<=m;j++){const px=x0+j*step,nm=nodePlain(c,s,j);
+    g+=`<circle class="nd" cx="${px}" cy="${yW}" r="6"/>`;
+    const base=nm.slice(0,1),sb=nm.slice(1);
+    g+=`<text class="tn" x="${px}" y="36" text-anchor="middle"><tspan>${base}</tspan><tspan font-size="10" dy="4">${sb}</tspan></text>`;
+    if(!opts.hideVals)g+=`<text class="t" x="${px}" y="${j%2?84:84}" dy="${0}" text-anchor="middle" style="font-weight:600">${fT(s.T[j])}°C</text>`;}
+  // shift node temp labels below the node line to avoid R value collision
+  return `<svg class="circ" width="${w}" height="132" viewBox="0 0 ${w} 132" role="img" aria-label="열저항 회로도">${g}</svg>`;
+}
+
+/* ---------- simulator UI ---------- */
+const viz=new Viz($('#cvMain'));
+function matOptions(sel){return MATS.map(([id,name,k])=>`<option value="${id}"${id===sel?' selected':''}>${name}${id==='custom'?'':' ('+k+')'}</option>`).join('');}
+function renderLayers(){
+  $('#layers').innerHTML=state.layers.map((l,i)=>`
+   <div class="layer" data-i="${i}">
+     <div class="layer-h"><span class="sw" style="background:${MAT[l.mat].c}">${i+1}</span><select id="L${i}-mat" class="mat" aria-label="${i+1}번 층 재료">${matOptions(l.mat)}</select>
+       <button class="rm" aria-label="${i+1}번 층 삭제" ${state.layers.length<2?'disabled':''}>×</button></div>
+     <label class="f" for="L${i}-k">열전도도 k<span class="in"><input id="L${i}-k" class="k" type="number" step="any" min="0.001" value="${l.k}"><em>W/m·K</em></span></label>
+     <div class="f"><span>두께</span><div class="lrow"><input id="L${i}-tr" class="tr" type="range" min="1" max="300" step="1" value="${Math.min(300,l.t)}" aria-label="${i+1}번 층 두께 슬라이더"><span class="in"><input id="L${i}-t" class="tn" type="number" step="any" min="0.1" value="${l.t}" aria-label="${i+1}번 층 두께"><em>mm</em></span></div></div>
+   </div>`).join('');
+  $('#addLayer').disabled=state.layers.length>=5;
+}
+function syncInputs(){
+  document.querySelectorAll('#geoSeg button').forEach(b=>b.classList.toggle('on',b.dataset.geo===state.geo));
+  $('#dimSlab').hidden=state.geo!=='slab';$('#dimCyl').hidden=state.geo!=='cyl';
+  $('#inA').value=state.A;$('#inR0').value=state.r0;$('#inLc').value=state.Lc;
+  [1,2].forEach(k=>{const sd=state['s'+k];$('#c'+k).checked=sd.conv;$('#T'+k).value=sd.T;$('#h'+k).value=sd.h;});
+  document.querySelectorAll('#presets .chip').forEach(b=>b.classList.toggle('on',b.dataset.p===curPreset));
+  renderLayers();
+}
+function refreshLabels(){
+  [1,2].forEach(k=>{const sd=state['s'+k];$('#bc'+k+'Name').textContent=`측 ${k} (${sideName(state,k)})`;
+    $('#t'+k+'Lab').textContent=sd.conv?'유체 온도 T∞':'표면 온도 (고정)';$('#h'+k+'Wrap').style.visibility=sd.conv?'visible':'hidden';});
+}
+function update(){
+  refreshLabels();
+  const s=solve(state);viz.set(state,s);
+  const n=state.layers.length;
+  $('#vizTitle').textContent=state.geo==='slab'?`평판 ${n}층 벽`:`원통 ${n}층 (배관·용기)`;
+  $('#vizSub').textContent=state.geo==='slab'?`1차원 정상상태 · A = ${fmt(state.A)} m² · 층 안에서 온도는 직선`:`반경 방향 1차원 정상상태 · 층 안에서 온도는 ln r 곡선`;
+  $('#cbMin').textContent=fT(viz.tmin)+'°';$('#cbMax').textContent=fT(viz.tmax)+'°';
+  $('#legend').innerHTML=legendHTML(state);
+  // readouts
+  const area=state.geo==='slab'?state.A:null;const big=s.els.reduce((a,e)=>e.R>a.R?e:a,s.els[0]);
+  const dir=s.q>=0?`측 1 → 측 2 (${sideName(state,1)} → ${sideName(state,2)})`:`측 2 → 측 1 (${sideName(state,2)} → ${sideName(state,1)})`;
+  $('#readouts').innerHTML=`
+   <div class="ro hot"><div class="k">열전달 속도 q</div><div class="v">${fmt(Math.abs(s.q))}<small>W</small></div><div class="s">${dir}</div></div>
+   ${state.geo==='slab'?`<div class="ro"><div class="k">열유속 q″ = q/A</div><div class="v">${fmt(Math.abs(s.q)/area)}<small>W/m²</small></div><div class="s">모든 층에서 동일</div></div>`
+     :`<div class="ro"><div class="k">단위 길이당 q′ = q/L</div><div class="v">${fmt(Math.abs(s.q)/state.Lc)}<small>W/m</small></div><div class="s">배관 1 m당 열손실</div></div>`}
+   <div class="ro"><div class="k">총 열저항 ΣR</div><div class="v">${fmt(s.Rtot)}<small>K/W</small></div><div class="s">ΔT = ${fT(Math.abs(state.s1.T-state.s2.T))} K</div></div>
+   <div class="ro"><div class="k">지배 저항</div><div class="v" style="font-size:1.25rem">${elName(big).replace(/<\/?sub>/g,'')}<small>${(big.R/s.Rtot*100).toFixed(0)}%</small></div><div class="s">${big.kind==='conv'?'대류 경계층':MAT[state.layers[big.i].mat].name}</div></div>`;
+  $('#circuit').innerHTML=circuitSVG(state,s);
+  // equations
+  $('#eqs').innerHTML=(state.geo==='slab'?['R = L / (k·A)','R<sub>conv</sub> = 1 / (h·A)']:['R = ln(r₂/r₁) / (2π·k·L)','R<sub>conv</sub> = 1 / (h·2πr·L)']).concat(['q = ΔT<sub>전체</sub> / ΣR','ΔT<sub>층</sub> = q·R']).map(t=>`<span class="eq">${t}</span>`).join('');
+  $('#steps').innerHTML=buildSteps(state,s).map(t=>`<li>${t}</li>`).join('');
+  // critical radius
+  const cr=$('#crit');
+  if(state.geo==='cyl'&&state.s2.conv){const li=n-1,l=state.layers[li],rcr=l.k/state.s2.h*1000,rin=s.r[li]*1000,rout=s.r[n]*1000;
+    cr.hidden=false;cr.className='note'+(rin>=rcr?' ok':'');
+    cr.innerHTML=`<b>임계 단열 반경</b> r<sub>cr</sub> = k/h = ${fmt(l.k)}/${fmt(state.s2.h)} = ${fmt(rcr)} mm. `+
+      (rin>=rcr?`바깥층 안쪽 반경 ${fmt(rin)} mm가 r<sub>cr</sub>보다 크므로, 이 층을 두껍게 할수록 열손실이 줄어듭니다.`
+       :`바깥층 안쪽 반경 ${fmt(rin)} mm가 r<sub>cr</sub>보다 작습니다. 바깥 반경이 r<sub>cr</sub>에 가까워질 때까지는 단열재를 붙일수록 표면적이 커져 오히려 열손실이 <b>증가</b>합니다. (현재 바깥 반경 ${fmt(rout)} mm) 역설계 탭 그래프에서 확인해 보세요.`);
+  }else cr.hidden=true;
+  designUpdate();
+}
+function legendHTML(c,unknown=-1){return c.layers.map((l,i)=>`<span><i style="background:${MAT[l.mat].c}"></i>${i+1}. ${MAT[l.mat].name} · k ${fmt(l.k)} · ${i===unknown?'?':fmt(l.t)} mm</span>`).join('');}
+
+$('#presets').innerHTML=Object.entries(PRESETS).map(([k,p])=>`<button class="chip" data-p="${k}">${p.label}</button>`).join('');
+$('#presets').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;curPreset=b.dataset.p;state=clone(PRESETS[curPreset]);syncInputs();setDesignDefaults();update();});
+$('#geoSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;state.geo=b.dataset.geo;curPreset='';syncInputs();update();});
+const num=(el,fb)=>{const v=parseFloat(el.value);return isFinite(v)?v:fb;};
+$('#inA').addEventListener('input',e=>{state.A=Math.max(0.001,num(e.target,state.A));update();});
+$('#inR0').addEventListener('input',e=>{state.r0=Math.max(0.1,num(e.target,state.r0));update();});
+$('#inLc').addEventListener('input',e=>{state.Lc=Math.max(0.001,num(e.target,state.Lc));update();});
+[1,2].forEach(k=>{
+  $('#c'+k).addEventListener('change',e=>{state['s'+k].conv=e.target.checked;update();});
+  $('#T'+k).addEventListener('input',e=>{state['s'+k].T=num(e.target,state['s'+k].T);update();});
+  $('#h'+k).addEventListener('input',e=>{state['s'+k].h=Math.max(0.01,num(e.target,state['s'+k].h));update();});
+});
+$('#layers').addEventListener('input',e=>{const card=e.target.closest('.layer');if(!card)return;const i=+card.dataset.i,l=state.layers[i];
+  if(e.target.classList.contains('k')){l.k=Math.max(0.0001,num(e.target,l.k));}
+  else if(e.target.classList.contains('tr')){l.t=+e.target.value;card.querySelector('.tn').value=l.t;}
+  else if(e.target.classList.contains('tn')){l.t=Math.max(0.01,num(e.target,l.t));card.querySelector('.tr').value=Math.min(300,l.t);}
+  else return;update();});
+$('#layers').addEventListener('change',e=>{if(!e.target.classList.contains('mat'))return;const i=+e.target.closest('.layer').dataset.i,l=state.layers[i];l.mat=e.target.value;if(l.mat!=='custom')l.k=MAT[l.mat].k;renderLayers();designLayerOpts();update();});
+$('#layers').addEventListener('click',e=>{const b=e.target.closest('.rm');if(!b||state.layers.length<2)return;state.layers.splice(+b.closest('.layer').dataset.i,1);renderLayers();designLayerOpts();update();});
+$('#addLayer').addEventListener('click',()=>{if(state.layers.length>=5)return;state.layers.push(L('gf',30));renderLayers();designLayerOpts();update();});
+
+/* ---------- design (inverse) ---------- */
+function designMetric(cfg,li,type){return t=>{const c2=clone(cfg);c2.layers[li].t=t;const s=solve(c2);return type==='q'?Math.abs(s.q):s.Ts[s.Ts.length-1];};}
+function designSolve(cfg,li,type,target){
+  const f=designMetric(cfg,li,type);const N=320,lo=Math.log(0.01),hi=Math.log(3000);let prev=null,pt=null;
+  let mn=Infinity,mx=-Infinity;
+  for(let k=0;k<=N;k++){const t=Math.exp(lo+(hi-lo)*k/N),v=f(t);mn=Math.min(mn,v);mx=Math.max(mx,v);const d=v-target;
+    if(prev!=null&&Math.sign(d)!==Math.sign(prev)){let a=Math.log(pt),b=Math.log(t),fa=prev;for(let it=0;it<70;it++){const m=(a+b)/2,fm=f(Math.exp(m))-target;if(Math.sign(fm)===Math.sign(fa)){a=m;fa=fm;}else b=m;}return {ok:true,t:Math.exp((a+b)/2),f,mn,mx};}
+    prev=d;pt=t;}
+  return {ok:false,f,mn,mx};
+}
+function designLayerOpts(){const sel=$('#dLayer'),cur=+sel.value||0;sel.innerHTML=state.layers.map((l,i)=>`<option value="${i}">${i+1}. ${MAT[l.mat].name}</option>`).join('');
+  const ins=state.layers.findIndex(l=>l.k<0.2);sel.value=String(cur<state.layers.length&&sel.dataset.touched?cur:(ins>=0?ins:state.layers.length-1));}
+function setDesignDefaults(){designLayerOpts();const s=solve(state);const type=$('#dType').value;
+  if(type==='q')$('#dVal').value=Number((Math.abs(s.q)*0.6).toPrecision(2));
+  else{const ts=s.Ts[s.Ts.length-1];$('#dVal').value=Number((state.s2.T+(ts-state.s2.T)*0.5).toFixed(1));}}
+$('#dType').addEventListener('change',()=>{$('#dUnit').textContent=$('#dType').value==='q'?'W':'°C';setDesignDefaults();designUpdate();});
+$('#dVal').addEventListener('input',designUpdate);
+$('#dLayer').addEventListener('change',e=>{e.target.dataset.touched='1';designUpdate();});
+let lastDesign=null;
+function designUpdate(){
+  const type=$('#dType').value,li=+$('#dLayer').value||0,target=parseFloat($('#dVal').value),c=state,res=$('#dResult'),stepsEl=$('#dSteps');
+  const s=solve(c),l=c.layers[li];if(!l)return;
+  $('#dNow').innerHTML=`현재: ${li+1}번 층 두께 ${fmt(l.t)} mm → q = ${fmt(Math.abs(s.q))} W, 측 2 표면 ${fT(s.Ts[s.Ts.length-1])} °C`;
+  lastDesign=null;$('#dApply').disabled=true;
+  if(type==='ts'&&!c.s2.conv){res.innerHTML=`<div class="msg">측 2가 표면 온도 고정 조건이라 표면 온도가 변하지 않습니다. 시뮬레이터에서 측 2의 <b>대류</b>를 켜면 표면 온도를 목표로 설계할 수 있습니다.</div>`;stepsEl.innerHTML='';drawDesignPlot(null);return;}
+  if(!isFinite(target)){res.innerHTML='<div class="msg">목표값을 입력하세요.</div>';stepsEl.innerHTML='';drawDesignPlot(null);return;}
+  const d=designSolve(c,li,type,target);const unit=type==='q'?'W':'°C';
+  if(!d.ok){res.innerHTML=`<div class="msg">두께 0.01–3000 mm 범위에서 목표 ${fmt(target)} ${unit}에 도달할 수 없습니다. 이 층만 바꿔서 얻을 수 있는 범위는 ${fmt(d.mn)} ~ ${fmt(d.mx)} ${unit} 입니다. 다른 층을 선택하거나 목표를 조정하세요.</div>`;stepsEl.innerHTML='';drawDesignPlot({f:d.f,target,cur:l.t,type});return;}
+  lastDesign={li,t:d.t};$('#dApply').disabled=false;
+  const c2=clone(c);c2.layers[li].t=d.t;const s2=solve(c2);
+  res.innerHTML=`<div><div class="muted small">${li+1}번 층 (${MAT[l.mat].name}) 필요 두께</div><div class="big">${fmt(d.t)}<small> mm</small></div></div>
+    <div class="msg">검산: 이 두께에서 q = ${fmt(Math.abs(s2.q))} W, 측 2 표면 ${fT(s2.Ts[s2.Ts.length-1])} °C${c.geo==='cyl'?`, 바깥 반경 ${fmt(s2.r[s2.r.length-1]*1000)} mm`:''}</div>`;
+  // steps
+  const st=[];const others=s.els.filter(e=>!(e.kind==='cond'&&e.i===li));const Ro=others.reduce((a,e)=>a+e.R,0);const dT=c.s1.T-c.s2.T;
+  let qT;
+  if(type==='q'){qT=target;st.push(`<span class="cm">① 목표 q로부터 필요한 전체 저항</span>`);st.push(`ΣR<sub>필요</sub> = |ΔT|/q* = ${fT(Math.abs(dT))}/${fmt(qT)} = <b>${fmt(Math.abs(dT)/qT)} K/W</b>`);}
+  else{const Rc=s.els[s.els.length-1];const Rc2=c.geo==='slab'?Rc.R:null;
+    if(c.geo==='slab'){qT=Math.abs((target-c.s2.T)/Rc2);st.push(`<span class="cm">① 바깥 대류 저항에서 목표 q 구하기 (q = (T<sub>s</sub> − T<sub>∞,2</sub>)/R<sub>conv,2</sub>)</span>`);st.push(`q* = |${fT(target)} − (${fT(c.s2.T)})|/${fmt(Rc2)} = <b>${fmt(qT)} W</b>`);st.push(`ΣR<sub>필요</sub> = |ΔT|/q* = ${fT(Math.abs(dT))}/${fmt(qT)} = <b>${fmt(Math.abs(dT)/qT)} K/W</b>`);}}
+  if(c.geo==='slab'){const Rneed=Math.abs(dT)/qT,Rx=Rneed-Ro;
+    st.push(`<span class="cm">② 다른 저항의 합을 빼면 이 층이 맡아야 할 저항</span>`);
+    st.push(`ΣR<sub>나머지</sub> = ${others.map(e=>fmt(e.R)).join(' + ')} = ${fmt(Ro)} K/W`);
+    st.push(`R<sub>${li+1}</sub> = ${fmt(Rneed)} − ${fmt(Ro)} = <b>${fmt(Rx)} K/W</b>`);
+    st.push(`<span class="cm">③ R = L/(kA) 를 L에 대해 풀기</span>`);
+    st.push(`L<sub>${li+1}</sub> = R<sub>${li+1}</sub>·k·A = ${fmt(Rx)} × ${fmt(l.k)} × ${fmt(c.A)} = ${fmt(Rx*l.k*c.A)} m = <b>${fmt(d.t)} mm</b>`);
+  }else{
+    st.push(`<span class="cm">원통에서는 한 층의 두께가 바뀌면 바깥쪽 모든 반경과 바깥 대류 면적(2πrL)이 함께 바뀝니다. 그래서 q(두께) 식을 직접 풀기보다 반복 계산(이분법)으로 목표를 만족하는 두께를 찾습니다.</span>`);
+    st.push(`f(t) = ${type==='q'?'q(t)':'T<sub>s</sub>(t)'} − ${fmt(target)} = 0 이 되는 t를 탐색`);
+    st.push(`r<sub>${li+1}</sub> = r<sub>${li}</sub> + t = ${fmt(s2.r[li]*1000)} + ${fmt(d.t)} = ${fmt(s2.r[li+1]*1000)} mm`);
+    st.push(`R<sub>${li+1}</sub> = ln(r<sub>${li+1}</sub>/r<sub>${li}</sub>)/(2πkL) = ln(${fmt(s2.r[li+1])}/${fmt(s2.r[li])})/(2π × ${fmt(l.k)} × ${fmt(c.Lc)}) = ${fmt(s2.els.find(e=>e.kind==='cond'&&e.i===li).R)} K/W`);
+    st.push(`ΣR = ${fmt(s2.Rtot)} K/W → q = ${fT(Math.abs(dT))}/${fmt(s2.Rtot)} = <b>${fmt(Math.abs(s2.q))} W</b>`);
+  }
+  stepsEl.innerHTML=st.map(t=>`<li>${t}</li>`).join('');
+  drawDesignPlot({f:d.f,target,cur:l.t,sol:d.t,type});
+}
+$('#dApply').addEventListener('click',()=>{if(!lastDesign)return;state.layers[lastDesign.li].t=Number(lastDesign.t.toPrecision(4));renderLayers();update();showView('sim');});
+function drawDesignPlot(p){
+  const cv=$('#cvDesign'),wrap=cv.parentElement,w=Math.max(260,wrap.clientWidth),h=clamp(w*.42,220,340),dpr=window.devicePixelRatio||1;
+  cv.style.width=w+'px';cv.style.height=h+'px';cv.width=w*dpr;cv.height=h*dpr;const x=cv.getContext('2d');x.setTransform(dpr,0,0,dpr,0,0);x.clearRect(0,0,w,h);
+  if(!p)return;const ink=tok('--ink'),muted=tok('--muted'),grid=tok('--grid'),heat=tok('--heat'),accent=tok('--accent'),mono=tok('--font-mono');
+  const L0=58,R0=w-16,T0=14,B0=h-38;const tmax=Math.max(40,(p.sol||0)*1.8,p.cur*1.8);
+  const N=220,pts=[];for(let k=0;k<=N;k++){const t=0.01+tmax*k/N;pts.push([t,p.f(t)]);}
+  let lo=Math.min(...pts.map(q=>q[1]),p.target),hi=Math.max(...pts.map(q=>q[1]),p.target);const pad=(hi-lo)*.1||1;lo-=pad;hi+=pad;
+  const X=t=>L0+t/tmax*(R0-L0),Y=v=>B0-(v-lo)/(hi-lo)*(B0-T0);
+  x.font=`11px ${mono}`;x.textAlign='right';x.textBaseline='middle';
+  niceTicks(lo,hi,5).forEach(v=>{if(v<lo||v>hi)return;x.strokeStyle=grid;x.beginPath();x.moveTo(L0,Y(v));x.lineTo(R0,Y(v));x.stroke();x.fillStyle=muted;x.fillText(fmt(v),L0-6,Y(v));});
+  x.textAlign='center';x.textBaseline='top';niceTicks(0,tmax,6).forEach(t=>{x.fillStyle=muted;x.fillText(fmt(t),X(t),B0+6);});
+  x.fillText('두께 (mm)',(L0+R0)/2,B0+20);
+  x.strokeStyle=ink;x.beginPath();x.moveTo(L0,T0);x.lineTo(L0,B0);x.lineTo(R0,B0);x.stroke();
+  x.save();x.setLineDash([6,5]);x.strokeStyle=heat;x.lineWidth=1.5;x.beginPath();x.moveTo(L0,Y(p.target));x.lineTo(R0,Y(p.target));x.stroke();x.restore();
+  x.fillStyle=heat;x.textAlign='right';x.textBaseline='bottom';x.fillText(`목표 ${fmt(p.target)} ${p.type==='q'?'W':'°C'}`,R0,Y(p.target)-3);
+  x.strokeStyle=accent;x.lineWidth=2.6;x.beginPath();pts.forEach((q,k)=>k?x.lineTo(X(q[0]),Y(q[1])):x.moveTo(X(q[0]),Y(q[1])));x.stroke();
+  // current marker
+  x.save();x.setLineDash([3,4]);x.strokeStyle=muted;x.lineWidth=1;x.beginPath();x.moveTo(X(p.cur),T0);x.lineTo(X(p.cur),B0);x.stroke();x.restore();
+  x.fillStyle=muted;x.textAlign='left';x.textBaseline='top';x.fillText('현재',X(p.cur)+4,T0);
+  if(p.sol!=null){const sx=X(p.sol),sy=Y(p.f(p.sol));x.fillStyle=tok('--panel');x.strokeStyle=heat;x.lineWidth=2.5;x.beginPath();x.arc(sx,sy,6,0,Math.PI*2);x.fill();x.stroke();
+    x.fillStyle=ink;x.font=`600 12px ${mono}`;x.textAlign=sx>w*.7?'right':'left';x.textBaseline='bottom';x.fillText(`${fmt(p.sol)} mm`,sx+(sx>w*.7?-10:10),sy-8);}
+  x.save();x.translate(14,(T0+B0)/2);x.rotate(-Math.PI/2);x.textAlign='center';x.fillStyle=muted;x.font=`11px ${tok('--font-body')}`;x.fillText(p.type==='q'?'q (W)':'측 2 표면 온도 (°C)',0,0);x.restore();
+}
+new ResizeObserver(()=>{if(!$('#view-design').hidden)designUpdate();}).observe($('#cvDesign').parentElement);
+
+/* ---------- challenge game ---------- */
+const gviz=new Viz($('#cvGame'));
+const G={score:0,streak:0,solved:0,best:0,p:null,tries:0,done:false};
+try{G.best=+localStorage.getItem('rlab-best')||0;}catch(e){}
+const THK={metal:[1,2,3,5],ins:[20,30,40,50,60,80,100],mas:[100,120,150,200,250],wood:[15,20,25,30]};
+const thick=id=>pick(['ss','al','cu','cs'].includes(id)?THK.metal:['gf','pu','cork'].includes(id)?THK.ins:['wood'].includes(id)?THK.wood:THK.mas);
+const SLABS=[{m:['brick','gf'],ctx:'건조실 벽'},{m:['conc','pu'],ctx:'냉동창고 벽'},{m:['fb','gf','ss'],ctx:'제빵 오븐 벽'},{m:['wood','cork'],ctx:'숙성고 문'},{m:['ss','pu','ss'],ctx:'냉장 샌드위치 패널'},{m:['brick','fb'],ctx:'훈연실 벽'}];
+const CYLS=[{m:['ss','gf'],ctx:'스팀 배관'},{m:['cs','gf'],ctx:'열수 배관'},{m:['cu','pu'],ctx:'냉매 배관'},{m:['ss','cork'],ctx:'냉각수 배관'}];
+function makeCfg(geo,combo,conv){const c={geo,A:pick([1,2,5,10]),r0:pick([10,15,20,25,30]),Lc:pick([1,5,10]),layers:combo.m.map(id=>L(id,thick(id)))};
+  const cold=combo.ctx.includes('냉');
+  if(cold){c.s1={conv,T:pick([25,30,35]),h:pick([10,15,20])};c.s2={conv,T:pick([-30,-25,-20,-18,2,4]),h:pick([5,8,10])};}
+  else{c.s1={conv,T:pick([120,150,180,200,250]),h:geo==='cyl'?pick([500,1000,2000,5000]):pick([20,30,40])};c.s2={conv,T:pick([15,20,25]),h:pick([5,8,10,15])};}
+  if(!conv){c.s1.T=cold?pick([25,30]):pick([80,100,150,200]);c.s2.T=cold?pick([-20,-10,0]):pick([20,25,30]);}
+  return c;}
+function genProblem(level){
+  const pool={basic:['slab_q_fixed','slab_T_fixed'],conv:['slab_q_conv','slab_Tint'],cyl:['cyl_q','cyl_Ts'],design:['slab_design']}[level]||['slab_q_fixed','slab_T_fixed','slab_q_conv','slab_Tint','cyl_q','cyl_Ts','slab_design'];
+  const type=pick(pool);let combo,c,s,p={type};
+  if(type.startsWith('slab')){combo=pick(type.includes('fixed')?SLABS.filter(x=>x.m.length===2):SLABS);c=makeCfg('slab',combo,!type.includes('fixed'));}
+  else{combo=pick(CYLS);c=makeCfg('cyl',combo,true);}
+  s=solve(c);p.cfg=c;p.sol=s;p.ctx=combo.ctx;
+  const n=c.layers.length;
+  switch(type){
+    case 'slab_q_fixed':case 'slab_q_conv':case 'cyl_q':p.ask='열전달 속도 q는 몇 W인가?';p.unit='W';p.ans=Math.abs(s.q);p.tol='rel';
+      p.hint=c.geo==='slab'?'각 층 R = L/(kA), 대류가 있으면 R = 1/(hA)도 더합니다. q = ΔT/ΣR':'원통 층 R = ln(r₂/r₁)/(2πkL), 대류 R = 1/(h·2πrL). 반경은 안쪽부터 두께를 차례로 더해 구합니다.';
+      p.tag=type==='slab_q_fixed'?'기초 · 평판 전도':type==='cyl_q'?'원통 · 전도+대류':'평판 · 전도+대류';break;
+    case 'slab_T_fixed':case 'slab_Tint':p.ask=`1번 층과 2번 층 사이 접촉면 온도 T₂는 몇 °C인가?`;p.unit='°C';p.ans=s.Ts[1];p.tol='abs';
+      p.hint='먼저 q = ΔT/ΣR을 구한 뒤, 고온측부터 T₂ = T₁ − q·R₁ (대류가 있으면 대류 저항부터) 순서로 내려갑니다.';
+      p.tag=type==='slab_T_fixed'?'기초 · 계면 온도':'평판 · 계면 온도';break;
+    case 'cyl_Ts':p.ask=`배관 바깥 표면 온도 T${usub(n+1)}는 몇 °C인가?`;p.unit='°C';p.ans=s.Ts[n];p.tol='abs';
+      p.hint='q를 먼저 구하고, 바깥 표면 온도는 T∞,2 + q·R_conv,2 로 바로 구할 수 있습니다.';p.tag='원통 · 표면 온도';break;
+    case 'slab_design':{const li=c.layers.findIndex(l=>l.k<0.2);const qT=Number(Math.abs(s.q).toPrecision(2));
+      const d=designSolve(c,li,'q',qT);p.ans=d.t;p.unit='mm';p.tol='rel';p.li=li;p.target=qT;
+      const c2=clone(c);c2.layers[li].t=d.t;p.cfg=c2;p.sol=solve(c2);
+      p.ask=`열손실을 ${fmt(qT)} W로 맞추려면 ${li+1}번 층(${MAT[c.layers[li].mat].name}) 두께는 몇 mm여야 하는가?`;
+      p.hint='ΣR필요 = ΔT/q*. 여기서 다른 저항을 빼면 이 층의 R이 나오고, L = R·k·A 입니다.';p.tag='설계 · 단열 두께';break;}
+  }
+  // text
+  const c0=p.cfg,g=[];
+  c0.layers.forEach((l,i)=>g.push(`${i+1}번 층 ${MAT[l.mat].name}: k = ${fmt(l.k)} W/m·K, 두께 ${type==='slab_design'&&i===p.li?'?':fmt(l.t)+' mm'}`));
+  if(c0.geo==='slab')g.push(`전열 면적 A = ${fmt(c0.A)} m²`);else g.push(`안쪽 반경 r₀ = ${fmt(c0.r0)} mm, 길이 L = ${fmt(c0.Lc)} m`);
+  [1,2].forEach(k=>{const sd=c0['s'+k];g.push(sd.conv?`${sideName(c0,k)} 유체: T∞ = ${fT(sd.T)} °C, h = ${fmt(sd.h)} W/m²K`:`${sideName(c0,k)} 표면 온도 = ${fT(sd.T)} °C`);});
+  const intro=c0.geo==='slab'?`${p.ctx}이 아래 그림처럼 ${c0.layers.length}개 층으로 되어 있다. 정상상태 1차원 열전도로 가정한다.`:`${p.ctx}에 단열재가 감겨 있다. 반경 방향 정상상태 열전달로 가정한다.`;
+  p.html=`<p>${intro}</p><ul class="givens">${g.map(t=>`<li>${t}</li>`).join('')}</ul>`;
+  return p;
+}
+function newProblem(){G.p=genProblem($('#gLevel').value);G.tries=0;G.done=false;const p=G.p;
+  $('#pTag').textContent=p.tag;$('#pTitle').textContent=p.ctx;$('#pText').innerHTML=p.html;$('#pQ').textContent=p.ask;$('#pUnit').textContent=p.unit;
+  $('#ansIn').value='';$('#gFb').textContent='';$('#gFb').className='fb';$('#gSol').hidden=true;$('#gChk').disabled=false;
+  const disp=clone(p.cfg);if(p.type==='slab_design')disp.layers[p.li].t=40;
+  gviz.set(disp,solve(disp),{hide:true,graph:false,unknown:p.type==='slab_design'?p.li:-1});
+  $('#gLegend').innerHTML=legendHTML(p.cfg,p.type==='slab_design'?p.li:-1);}
+function gStats(){$('#gScore').textContent=G.score;$('#gStreak').textContent=G.streak;$('#gSolved').textContent=G.solved;if(G.score>G.best){G.best=G.score;try{localStorage.setItem('rlab-best',G.best);}catch(e){}}$('#gBest').textContent=G.best;}
+function revealG(){const p=G.p;G.done=true;$('#gChk').disabled=true;
+  gviz.set(p.cfg,p.sol,{hide:false,graph:true});$('#gLegend').innerHTML=legendHTML(p.cfg);
+  $('#gCirc').innerHTML=circuitSVG(p.cfg,p.sol);
+  let st=buildSteps(p.cfg,p.sol);
+  if(p.type==='slab_design'){const s=p.sol,others=s.els.filter(e=>!(e.kind==='cond'&&e.i===p.li)),Ro=others.reduce((a,e)=>a+e.R,0),dT=Math.abs(p.cfg.s1.T-p.cfg.s2.T),Rn=dT/p.target,Rx=Rn-Ro,l=p.cfg.layers[p.li];
+    st=[`<span class="cm">설계 풀이</span>`,`ΣR<sub>필요</sub> = ΔT/q* = ${fT(dT)}/${fmt(p.target)} = ${fmt(Rn)} K/W`,`ΣR<sub>나머지</sub> = ${others.map(e=>fmt(e.R)).join(' + ')} = ${fmt(Ro)} K/W`,`R<sub>${p.li+1}</sub> = ${fmt(Rn)} − ${fmt(Ro)} = ${fmt(Rx)} K/W`,`L = R·k·A = ${fmt(Rx)} × ${fmt(l.k)} × ${fmt(p.cfg.A)} = <b>${fmt(p.ans)} mm</b>`,`<span class="cm">이 두께에서의 전체 계산</span>`].concat(st);}
+  $('#gSteps').innerHTML=st.map(t=>`<li>${t}</li>`).join('');$('#gSol').hidden=false;}
+$('#gChk').addEventListener('click',()=>{const p=G.p;if(!p||G.done)return;const v=parseFloat($('#ansIn').value);const fb=$('#gFb');
+  if(!isFinite(v)){fb.className='fb hint';fb.textContent='숫자를 입력하세요.';return;}
+  const span=Math.abs(p.cfg.s1.T-p.cfg.s2.T);const ok=p.tol==='rel'?Math.abs(v-p.ans)/Math.abs(p.ans)<=0.03:Math.abs(v-p.ans)<=Math.max(0.6,0.02*span);
+  if(ok){const pts=G.tries===0?10:5;G.score+=pts+(G.streak>=2?2:0);G.streak++;G.solved++;fb.className='fb ok';fb.textContent=`정답! +${pts}${G.streak>=3?' (연속 보너스 +2)':''}  정답 ${fmt(p.ans)} ${p.unit}`;gStats();revealG();}
+  else{G.tries++;G.streak=0;gStats();const err=p.tol==='rel'?`상대오차 ${(Math.abs(v-p.ans)/Math.abs(p.ans)*100).toFixed(0)}%`:`${Math.abs(v-p.ans).toFixed(1)} °C 차이`;
+    fb.className='fb no';fb.textContent=`다시 시도해 보세요 (${v>p.ans?'너무 큼':'너무 작음'}, ${err}). 오차 3% 이내면 정답입니다.`;}});
+$('#ansIn').addEventListener('keydown',e=>{if(e.key==='Enter')$('#gChk').click();});
+$('#gHint').addEventListener('click',()=>{if(!G.p)return;const fb=$('#gFb');fb.className='fb hint';fb.textContent='힌트: '+G.p.hint;});
+$('#gReveal').addEventListener('click',()=>{if(!G.p||G.done)return;G.streak=0;gStats();$('#gFb').className='fb hint';$('#gFb').textContent=`정답: ${fmt(G.p.ans)} ${G.p.unit}`;revealG();});
+$('#gNew').addEventListener('click',newProblem);
+$('#gLevel').addEventListener('change',newProblem);
+
+/* ---------- views & loop ---------- */
+function showView(v){document.querySelectorAll('.view').forEach(s=>s.hidden=s.id!=='view-'+v);document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.view===v));
+  if(v==='design')designUpdate();if(v==='sim')viz.layout();if(v==='game'){if(!G.p)newProblem();else gviz.layout();}
+  try{history.replaceState(null,'','#'+v);}catch(e){}}
+document.querySelector('.tabs').addEventListener('click',e=>{const b=e.target.closest('button');if(b)showView(b.dataset.view);});
+$('#bigBtn').addEventListener('click',e=>{const on=document.documentElement.classList.toggle('big');e.currentTarget.setAttribute('aria-pressed',on);setTimeout(()=>{viz.layout();if(G.p)gviz.layout();designUpdate();},30);});
+let last=performance.now();
+function loop(ts){const dt=Math.min(.05,(ts-last)/1000);last=ts;[viz,gviz].forEach(v=>{if(v.cfg&&v.cv.offsetParent){v.step(dt);v.draw();}});requestAnimationFrame(loop);}
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change',()=>designUpdate());
+
+syncInputs();setDesignDefaults();update();gStats();
+const h0=(location.hash||'').slice(1);if(['design','game'].includes(h0))showView(h0);
+requestAnimationFrame(loop);
+</script>
+
+</body>
+</html>
